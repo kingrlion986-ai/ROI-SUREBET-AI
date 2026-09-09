@@ -10,7 +10,8 @@ function normalizeLiveOdds(apiResponse) {
 
     const status = item.status || {};
 
-    // Ne pas utiliser un marché arrêté, bloqué ou terminé.
+    // Un marché arrêté, bloqué ou terminé
+    // ne doit jamais être utilisé pour un pari.
     if (
       status.stopped === true ||
       status.blocked === true ||
@@ -19,19 +20,14 @@ function normalizeLiveOdds(apiResponse) {
       continue;
     }
 
-    const homeGoals = item.teams?.home?.goals;
-    const awayGoals = item.teams?.away?.goals;
-
-    const homeTeam = item.teams?.home?.name || "Domicile";
-    const awayTeam = item.teams?.away?.name || "Extérieur";
-
     const bookmakers = Array.isArray(item.odds)
       ? item.odds
       : [];
 
     for (const bookmaker of bookmakers) {
       const bookmakerName =
-        bookmaker.name || `Bookmaker ${bookmaker.id || ""}`.trim();
+        bookmaker.name ||
+        `Bookmaker ${bookmaker.id || "unknown"}`;
 
       const bets = Array.isArray(bookmaker.bets)
         ? bookmaker.bets
@@ -42,44 +38,45 @@ function normalizeLiveOdds(apiResponse) {
           continue;
         }
 
-        const marketName = bet.name || "";
+        const values = [];
 
-        // Première version :
-        // on garde uniquement les marchés clairement
-        // exploitables et à deux issues.
-        const values = bet.values
-          .map((value) => {
-            const odd = Number(value?.odd);
+        for (const value of bet.values) {
+          if (!value) continue;
 
-            if (!Number.isFinite(odd) || odd <= 1) {
-              return null;
-            }
+          if (value.suspended === true) {
+            continue;
+          }
 
-            if (value?.suspended === true) {
-              return null;
-            }
+          const odd = Number(value.odd);
 
-            return {
-              name: String(value?.value || ""),
-              bookmaker: bookmakerName,
-              odds: odd,
-              handicap: value?.handicap ?? null
-            };
-          })
-          .filter(Boolean);
+          if (!Number.isFinite(odd) || odd <= 1) {
+            continue;
+          }
+
+          const name = String(
+            value.value || ""
+          ).trim();
+
+          if (!name) continue;
+
+          values.push({
+            name,
+            bookmaker: bookmakerName,
+            odds: odd,
+            handicap: value.handicap ?? null
+          });
+        }
 
         if (values.length < 2) {
           continue;
         }
 
         normalized.push({
-          event: `${homeTeam} vs ${awayTeam}`,
-          market: marketName,
+          event: `Fixture ${item.fixture?.id || "unknown"}`,
+          market: String(
+            bet.name || "Marché live"
+          ),
           live: true,
-          score: {
-            home: homeGoals ?? null,
-            away: awayGoals ?? null
-          },
           updatedAt: item.update || null,
           outcomes: values
         });
