@@ -4,6 +4,9 @@ const path = require("path");
 const { findSurebets } = require("./src/engine/surebet");
 const { calculateStakes } = require("./src/engine/stakeCalculator");
 const { demoMarkets } = require("./src/data/demoOdds");
+const {
+  getCountries
+} = require("./src/providers/apiFootball");
 
 const app = express();
 
@@ -109,6 +112,40 @@ app.get("*", (_req, res) => {
     )
   );
 });
+
+app.get(
+  "/api/football/test",
+  async (_req, res) => {
+    try {
+      const result =
+        await getCountries();
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        apiConnected: true,
+        remainingRequests:
+          result.remaining,
+        countries:
+          result.data.response
+            ? result.data.response.length
+            : 0
+      });
+    } catch (error) {
+      console.error(
+        "API-Football error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        provider: "API-Football",
+        apiConnected: false,
+        error: error.message
+      });
+    }
+  }
+);
 
 app.listen(PORT, () => {
   console.log(
