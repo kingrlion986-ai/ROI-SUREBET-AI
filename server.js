@@ -276,16 +276,48 @@ app.get(
         remainingRequests:
           result.remaining,
 
-        responseCount:
-          response.length,
+        app.get(
+  "/api/football/live-markets/:fixture",
+  async (req, res) => {
+    try {
+      const fixture = Number(req.params.fixture);
 
-        firstItemKeys:
-          response[0]
-            ? Object.keys(response[0])
-            : [],
+      if (!Number.isInteger(fixture)) {
+        return res.status(400).json({
+          ok: false,
+          error: "fixture invalide."
+        });
+      }
 
-        firstItem:
-          response[0] || null
+      const result = await getLiveOdds({
+        fixture
+      });
+
+      const markets = normalizeLiveOdds(
+        result.data.response || []
+      );
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        fixture,
+        remainingRequests:
+          result.remaining,
+        markets
+      });
+    } catch (error) {
+      console.error(
+        "Live markets error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+  }
+);
       });
     } catch (error) {
       console.error(
