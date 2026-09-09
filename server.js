@@ -266,9 +266,8 @@ app.get(
         fixture
       });
 
-      const markets = normalizeLiveOdds(
-        result.data.response || []
-      );
+      const response =
+        result.data.response || [];
 
       res.json({
         ok: true,
@@ -276,7 +275,17 @@ app.get(
         fixture,
         remainingRequests:
           result.remaining,
-        markets
+
+        responseCount:
+          response.length,
+
+        firstItemKeys:
+          response[0]
+            ? Object.keys(response[0])
+            : [],
+
+        firstItem:
+          response[0] || null
       });
     } catch (error) {
       console.error(
