@@ -144,9 +144,9 @@ app.get(
     try {
       const result =
         await getFixtures({
-          next: 10,
-          timezone: "Africa/Brazzaville"
-        });
+  date: new Date().toISOString().slice(0, 10),
+  timezone: "Africa/Brazzaville"
+});
 
       res.json({
         ok: true,
