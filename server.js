@@ -103,16 +103,6 @@ app.post("/api/surebets", (req, res) => {
   });
 });
 
-app.get("*", (_req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      "public",
-      "index.html"
-    )
-  );
-});
-
 app.get(
   "/api/football/test",
   async (_req, res) => {
@@ -146,6 +136,16 @@ app.get(
     }
   }
 );
+
+app.get("*", (_req, res) => {
+  res.sendFile(
+    path.join(
+      __dirname,
+      "public",
+      "index.html"
+    )
+  );
+});
 
 app.listen(PORT, () => {
   console.log(
