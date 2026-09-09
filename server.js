@@ -39,10 +39,15 @@ app.get("/api/demo", (req, res) => {
       ...surebet,
 
       stakes:
-        calculateStakes(
-          surebet.outcomes,
-          bankroll
-        )
+  calculateStakes(
+    surebet.outcomes,
+    bankroll,
+    {
+      minStake: 1,
+      maxStake: bankroll,
+      rounding: 1
+    }
+  )
     }));
 
   res.json({
@@ -78,10 +83,15 @@ app.post("/api/surebets", (req, res) => {
       ...surebet,
 
       stakes:
-        calculateStakes(
-          surebet.outcomes,
-          Number(bankroll)
-        )
+  calculateStakes(
+    surebet.outcomes,
+    Number(bankroll),
+    {
+      minStake: 1,
+      maxStake: Number(bankroll),
+      rounding: 1
+    }
+  )
     }));
 
   res.json({
