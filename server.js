@@ -293,18 +293,7 @@ app.get(
         fixture
       });
 
-      const markets = normalizeLiveOdds(
-        result.data.response || []
-      );
-
-      res.json({
-        ok: true,
-        provider: "API-Football",
-        fixture,
-        remainingRequests:
-          result.remaining,
-        markets
-      });
+      
     } catch (error) {
       console.error(
         "Live markets error:",
