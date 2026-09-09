@@ -292,6 +292,77 @@ app.get(
   }
 );
 
+app.get(
+  "/api/football/live-surebets/:fixture",
+  async (req, res) => {
+    try {
+      const fixture = Number(req.params.fixture);
+      const bankroll = Number(req.query.bankroll || 2000);
+
+      if (!Number.isInteger(fixture)) {
+        return res.status(400).json({
+          ok: false,
+          error: "fixture invalide."
+        });
+      }
+
+      if (!Number.isFinite(bankroll) || bankroll <= 0) {
+        return res.status(400).json({
+          ok: false,
+          error: "bankroll invalide."
+        });
+      }
+
+      const result = await getLiveOdds({
+        fixture
+      });
+
+      const markets = normalizeLiveOdds(
+        result.data.response || []
+      );
+
+      const surebets = findSurebets(
+        markets,
+        MIN_PROFIT_PERCENT,
+        {
+          maxAgeSeconds: 90
+        }
+      );
+
+      const results = surebets.map((surebet) => ({
+        ...surebet,
+        stakes: calculateStakes(
+          surebet.outcomes,
+          bankroll
+        )
+      }));
+
+      res.json({
+        ok: true,
+        mode: "simulation",
+        provider: "API-Football",
+        fixture,
+        bankroll,
+        remainingRequests:
+          result.remaining,
+        marketsChecked: markets.length,
+        surebetsFound: results.length,
+        surebets: results
+      });
+    } catch (error) {
+      console.error(
+        "Live surebet error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+  }
+);
+
 app.get("*", (_req, res) => {
   res.sendFile(
     path.join(
