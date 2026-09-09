@@ -5,7 +5,8 @@ const { findSurebets } = require("./src/engine/surebet");
 const { calculateStakes } = require("./src/engine/stakeCalculator");
 const { demoMarkets } = require("./src/data/demoOdds");
 const {
-  getCountries
+  getCountries,
+  getFixtures
 } = require("./src/providers/apiFootball");
 
 const app = express();
@@ -131,6 +132,39 @@ app.get(
         ok: false,
         provider: "API-Football",
         apiConnected: false,
+        error: error.message
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/football/fixtures",
+  async (_req, res) => {
+    try {
+      const result =
+        await getFixtures({
+          next: 10,
+          timezone: "Africa/Brazzaville"
+        });
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        remainingRequests:
+          result.remaining,
+        fixtures:
+          result.data.response || []
+      });
+    } catch (error) {
+      console.error(
+        "API-Football fixtures error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        provider: "API-Football",
         error: error.message
       });
     }
