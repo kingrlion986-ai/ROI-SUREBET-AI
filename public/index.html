@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>ROI Surebet AI</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  >
+</head>
+
+<body>
+
+  <main class="container">
+
+    <header>
+      <h1>ROI Surebet AI</h1>
+
+      <p>
+        Détection d'arbitrage sportif —
+        <strong>MODE SIMULATION</strong>
+      </p>
+    </header>
+
+    <section class="panel">
+
+      <label for="bankroll">
+        Bankroll (FCFA)
+      </label>
+
+      <input
+        id="bankroll"
+        type="number"
+        min="1"
+        value="2000"
+      >
+
+      <button id="scan">
+        Scanner les cotes
+      </button>
+
+    </section>
+
+    <section id="status"></section>
+
+    <section id="results"></section>
+
+    <footer>
+      Simulation uniquement.
+      Aucun pari réel n'est placé.
+    </footer>
+
+  </main>
+
+  <script src="/app.js"></script>
+
+</body>
+
+</html>
