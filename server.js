@@ -10,6 +10,9 @@ const {
   getLiveFixtures,
   getLiveOdds
 } = require("./src/providers/apiFootball");
+const {
+  normalizeLiveOdds
+} = require("./src/providers/apiFootballLiveNormalizer");
 
 const app = express();
 
@@ -240,6 +243,49 @@ app.get(
       res.status(500).json({
         ok: false,
         provider: "API-Football",
+        error: error.message
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/football/live-markets/:fixture",
+  async (req, res) => {
+    try {
+      const fixture = Number(req.params.fixture);
+
+      if (!Number.isInteger(fixture)) {
+        return res.status(400).json({
+          ok: false,
+          error: "fixture invalide."
+        });
+      }
+
+      const result = await getLiveOdds({
+        fixture
+      });
+
+      const markets = normalizeLiveOdds(
+        result.data.response || []
+      );
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        fixture,
+        remainingRequests:
+          result.remaining,
+        markets
+      });
+    } catch (error) {
+      console.error(
+        "Live markets error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
         error: error.message
       });
     }
