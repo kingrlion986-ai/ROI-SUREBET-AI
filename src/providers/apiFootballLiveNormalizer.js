@@ -10,8 +10,7 @@ function normalizeLiveOdds(apiResponse) {
 
     const status = item.status || {};
 
-    // Un marché arrêté, bloqué ou terminé
-    // ne doit jamais être utilisé pour un pari.
+    // Sécurité : jamais de marché arrêté, bloqué ou terminé.
     if (
       status.stopped === true ||
       status.blocked === true ||
@@ -20,66 +19,97 @@ function normalizeLiveOdds(apiResponse) {
       continue;
     }
 
-    const bookmakers = Array.isArray(item.odds)
-      ? item.odds
-      : [];
+    const fixtureId =
+      item.fixture?.id || null;
 
-    for (const bookmaker of bookmakers) {
-      const bookmakerName =
-        bookmaker.name ||
-        `Bookmaker ${bookmaker.id || "unknown"}`;
+    /*
+     * Structure 1 :
+     * item.odds = [
+     *   {
+     *     name: "Bookmaker",
+     *     bets: [...]
+     *   }
+     * ]
+     */
 
-      const bets = Array.isArray(bookmaker.bets)
-        ? bookmaker.bets
-        : [];
+    if (Array.isArray(item.odds)) {
+      for (const source of item.odds) {
+        if (!source) continue;
 
-      for (const bet of bets) {
-        if (!bet || !Array.isArray(bet.values)) {
+        const bookmakerName =
+          source.name ||
+          source.bookmaker?.name ||
+          null;
+
+        // Si aucune identité de bookmaker n'est disponible,
+        // on ne fabrique pas de faux bookmaker.
+        if (!bookmakerName) {
           continue;
         }
 
-        const values = [];
+        const bets = Array.isArray(source.bets)
+          ? source.bets
+          : [];
 
-        for (const value of bet.values) {
-          if (!value) continue;
-
-          if (value.suspended === true) {
+        for (const bet of bets) {
+          if (
+            !bet ||
+            !Array.isArray(bet.values)
+          ) {
             continue;
           }
 
-          const odd = Number(value.odd);
+          const outcomes = [];
 
-          if (!Number.isFinite(odd) || odd <= 1) {
+          for (const value of bet.values) {
+            if (!value) continue;
+
+            if (value.suspended === true) {
+              continue;
+            }
+
+            const odd = Number(value.odd);
+
+            if (
+              !Number.isFinite(odd) ||
+              odd <= 1
+            ) {
+              continue;
+            }
+
+            const name = String(
+              value.value || ""
+            ).trim();
+
+            if (!name) continue;
+
+            outcomes.push({
+              name,
+              bookmaker: bookmakerName,
+              odds: odd,
+              handicap:
+                value.handicap ?? null
+            });
+          }
+
+          if (outcomes.length < 2) {
             continue;
           }
 
-          const name = String(
-            value.value || ""
-          ).trim();
-
-          if (!name) continue;
-
-          values.push({
-            name,
-            bookmaker: bookmakerName,
-            odds: odd,
-            handicap: value.handicap ?? null
+          normalized.push({
+            fixtureId,
+            event:
+              `Fixture ${fixtureId || "unknown"}`,
+            market:
+              String(
+                bet.name || "Marché live"
+              ),
+            live: true,
+            updatedAt:
+              item.update || null,
+            outcomes
           });
         }
-
-        if (values.length < 2) {
-          continue;
-        }
-
-        normalized.push({
-          event: `Fixture ${item.fixture?.id || "unknown"}`,
-          market: String(
-            bet.name || "Marché live"
-          ),
-          live: true,
-          updatedAt: item.update || null,
-          outcomes: values
-        });
       }
     }
   }
