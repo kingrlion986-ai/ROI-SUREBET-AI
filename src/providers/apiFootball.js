@@ -99,9 +99,17 @@ async function getLiveFixtures() {
   );
 }
 
+async function getLiveOdds(params = {}) {
+  return apiFootballRequest(
+    "/odds/live",
+    params
+  );
+}
+
 module.exports = {
   apiFootballRequest,
   getCountries,
   getFixtures,
-  getLiveFixtures
+  getLiveFixtures,
+  getLiveOdds
 };
