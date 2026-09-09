@@ -90,8 +90,18 @@ async function getFixtures(params = {}) {
   );
 }
 
+async function getLiveFixtures() {
+  return apiFootballRequest(
+    "/fixtures",
+    {
+      live: "all"
+    }
+  );
+}
+
 module.exports = {
   apiFootballRequest,
   getCountries,
-  getFixtures
+  getFixtures,
+  getLiveFixtures
 };
