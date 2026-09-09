@@ -1,0 +1,16 @@
+{
+  "name": "roi-surebet-ai",
+  "version": "1.0.0",
+  "description": "AI-powered sports betting arbitrage detection and stake calculation platform. Simulation-first.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
