@@ -83,7 +83,15 @@ async function getCountries() {
   );
 }
 
+async function getFixtures(params = {}) {
+  return apiFootballRequest(
+    "/fixtures",
+    params
+  );
+}
+
 module.exports = {
   apiFootballRequest,
-  getCountries
+  getCountries,
+  getFixtures
 };
