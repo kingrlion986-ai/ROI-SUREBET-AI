@@ -6,7 +6,8 @@ const { calculateStakes } = require("./src/engine/stakeCalculator");
 const { demoMarkets } = require("./src/data/demoOdds");
 const {
   getCountries,
-  getFixtures
+  getFixtures,
+  getLiveFixtures
 } = require("./src/providers/apiFootball");
 
 const app = express();
@@ -159,6 +160,36 @@ app.get(
     } catch (error) {
       console.error(
         "API-Football fixtures error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        provider: "API-Football",
+        error: error.message
+      });
+    }
+  }
+);
+
+      app.get(
+  "/api/football/live",
+  async (_req, res) => {
+    try {
+      const result =
+        await getLiveFixtures();
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        remainingRequests:
+          result.remaining,
+        liveFixtures:
+          result.data.response || []
+      });
+    } catch (error) {
+      console.error(
+        "API-Football live error:",
         error.message
       );
 
