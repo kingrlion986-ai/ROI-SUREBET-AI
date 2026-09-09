@@ -7,7 +7,8 @@ const { demoMarkets } = require("./src/data/demoOdds");
 const {
   getCountries,
   getFixtures,
-  getLiveFixtures
+  getLiveFixtures,
+  getLiveOdds
 } = require("./src/providers/apiFootball");
 
 const app = express();
@@ -190,6 +191,49 @@ app.get(
     } catch (error) {
       console.error(
         "API-Football live error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        provider: "API-Football",
+        error: error.message
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/football/live-odds/:fixture",
+  async (req, res) => {
+    try {
+      const fixture =
+        Number(req.params.fixture);
+
+      if (!Number.isInteger(fixture)) {
+        return res.status(400).json({
+          ok: false,
+          error: "fixture invalide."
+        });
+      }
+
+      const result =
+        await getLiveOdds({
+          fixture
+        });
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        fixture,
+        remainingRequests:
+          result.remaining,
+        odds:
+          result.data.response || []
+      });
+    } catch (error) {
+      console.error(
+        "API-Football live odds error:",
         error.message
       );
 
