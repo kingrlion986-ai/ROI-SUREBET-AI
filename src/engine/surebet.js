@@ -1,15 +1,14 @@
-function isValidOutcome(outcome) {
+function isValidQuote(quote) {
   return (
-    outcome &&
-    typeof outcome.name === "string" &&
-    outcome.name.trim().length > 0 &&
-    typeof outcome.bookmaker === "string" &&
-    outcome.bookmaker.trim().length > 0 &&
-    Number.isFinite(Number(outcome.odds)) &&
-    Number(outcome.odds) > 1
+    quote &&
+    typeof quote.name === "string" &&
+    quote.name.trim().length > 0 &&
+    typeof quote.bookmaker === "string" &&
+    quote.bookmaker.trim().length > 0 &&
+    Number.isFinite(Number(quote.odds)) &&
+    Number(quote.odds) > 1
   );
 }
-
 
 function isSameMarket(market) {
   return (
@@ -21,6 +20,44 @@ function isSameMarket(market) {
   );
 }
 
+function isFresh(market, maxAgeSeconds = 30) {
+  if (!market.updatedAt) return true;
+
+  const timestamp =
+    new Date(market.updatedAt).getTime();
+
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+
+  const age =
+    (Date.now() - timestamp) / 1000;
+
+  return age >= 0 && age <= maxAgeSeconds;
+}
+
+function findBestQuotes(outcomes) {
+  const best = new Map();
+
+  for (const outcome of outcomes) {
+    if (!isValidQuote(outcome)) continue;
+
+    const name =
+      outcome.name.trim().toLowerCase();
+
+    const current = best.get(name);
+
+    if (
+      !current ||
+      Number(outcome.odds) >
+        Number(current.odds)
+    ) {
+      best.set(name, outcome);
+    }
+  }
+
+  return Array.from(best.values());
+}
 
 function hasDifferentBookmakers(outcomes) {
   const bookmakers =
@@ -36,32 +73,6 @@ function hasDifferentBookmakers(outcomes) {
     bookmakers.length
   );
 }
-
-
-function isFresh(market, maxAgeSeconds = 30) {
-  if (!market.updatedAt) {
-    return true;
-  }
-
-  const timestamp =
-    new Date(
-      market.updatedAt
-    ).getTime();
-
-  if (!Number.isFinite(timestamp)) {
-    return false;
-  }
-
-  const age =
-    (Date.now() - timestamp) /
-    1000;
-
-  return (
-    age >= 0 &&
-    age <= maxAgeSeconds
-  );
-}
-
 
 function findSurebets(
   markets,
@@ -80,33 +91,13 @@ function findSurebets(
   }
 
   for (const market of markets) {
-
     if (!isSameMarket(market)) {
       continue;
     }
 
     if (
-      !Array.isArray(
-        market.outcomes
-      ) ||
+      !Array.isArray(market.outcomes) ||
       market.outcomes.length < 2
-    ) {
-      continue;
-    }
-
-    const valid =
-      market.outcomes.every(
-        isValidOutcome
-      );
-
-    if (!valid) {
-      continue;
-    }
-
-    if (
-      !hasDifferentBookmakers(
-        market.outcomes
-      )
     ) {
       continue;
     }
@@ -120,8 +111,36 @@ function findSurebets(
       continue;
     }
 
+    /*
+     * Plusieurs bookmakers peuvent proposer
+     * le même résultat.
+     *
+     * On conserve uniquement la meilleure cote
+     * pour chaque résultat.
+     */
+    const bestQuotes =
+      findBestQuotes(
+        market.outcomes
+      );
+
+    if (bestQuotes.length < 2) {
+      continue;
+    }
+
+    /*
+     * Un véritable arbitrage doit utiliser
+     * des bookmakers différents.
+     */
+    if (
+      !hasDifferentBookmakers(
+        bestQuotes
+      )
+    ) {
+      continue;
+    }
+
     const inverseSum =
-      market.outcomes.reduce(
+      bestQuotes.reduce(
         (sum, outcome) =>
           sum +
           1 /
@@ -131,6 +150,11 @@ function findSurebets(
         0
       );
 
+    /*
+     * Condition mathématique du surebet :
+     *
+     * 1/cote1 + 1/cote2 + ... < 1
+     */
     if (inverseSum >= 1) {
       continue;
     }
@@ -149,12 +173,20 @@ function findSurebets(
     found.push({
       event: market.event,
       market: market.market,
+
       inverseSum,
+
       profitPercent,
+
       updatedAt:
-        market.updatedAt || null,
+        market.updatedAt ||
+        null,
+
+      live:
+        market.live === true,
+
       outcomes:
-        market.outcomes
+        bestQuotes
     });
   }
 
@@ -164,7 +196,6 @@ function findSurebets(
       a.profitPercent
   );
 }
-
 
 module.exports = {
   findSurebets
