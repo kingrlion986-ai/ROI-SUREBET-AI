@@ -106,6 +106,136 @@ results
 });
 });
 
+app.post("/api/scan", (req, res) => {
+  try {
+    const {
+      markets,
+      bankroll
+    } = req.body;
+
+    const B = Number(bankroll);
+
+    if (
+      !Array.isArray(markets)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Le champ markets doit être un tableau."
+      });
+    }
+
+    if (
+      !Number.isFinite(B) ||
+      B <= 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "La bankroll doit être supérieure à 0."
+      });
+    }
+
+    const minProfitPercent =
+      Number(
+        process.env.MIN_PROFIT_PERCENT || 0.5
+      );
+
+    const maxAgeSeconds =
+      Number(
+        process.env.MAX_ODDS_AGE_SECONDS || 30
+      );
+
+    const surebets =
+      findSurebets(
+        markets,
+        minProfitPercent,
+        {
+          maxAgeSeconds
+        }
+      );
+
+    const results =
+      surebets.map(
+        (surebet) => {
+          let stakes = null;
+
+          try {
+            stakes =
+              calculateStakes(
+                surebet.outcomes,
+                B,
+                {
+                  minStake: Number(
+                    process.env.MIN_STAKE || 0
+                  ),
+                  maxStake:
+                    B,
+                  rounding: Number(
+                    process.env.STAKE_ROUNDING || 1
+                  )
+                }
+              );
+          } catch (error) {
+            stakes = {
+              error: error.message
+            };
+          }
+
+          return {
+            event:
+              surebet.event,
+
+            market:
+              surebet.market,
+
+            live:
+              surebet.live,
+
+            updatedAt:
+              surebet.updatedAt,
+
+            inverseSum:
+              surebet.inverseSum,
+
+            profitPercent:
+              surebet.profitPercent,
+
+            outcomes:
+              surebet.outcomes,
+
+            stakes
+          };
+        }
+      );
+
+    return res.json({
+      ok: true,
+      simulation: true,
+      bankroll: B,
+      marketsScanned:
+        markets.length,
+      surebetsFound:
+        results.length,
+      results
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Erreur /api/scan:",
+      error
+    );
+
+    return res.status(500).json({
+      ok: false,
+      error:
+        error.message ||
+        "Erreur interne."
+    });
+  }
+});
+
 app.get(
   "/api/football/bookmakers",
   async (_req, res) => {
