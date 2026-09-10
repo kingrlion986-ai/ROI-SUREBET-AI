@@ -255,9 +255,7 @@ async function scanSurebets() {
     );
 
   if (
-    !Number.isFinite(
-      bankroll
-    ) ||
+    !Number.isFinite(bankroll) ||
     bankroll <= 0
   ) {
     resultsContainer.innerHTML =
@@ -275,22 +273,80 @@ async function scanSurebets() {
     "<p>Analyse des opportunités...</p>";
 
   try {
-    const response =
+    /*
+     * Pour le moment, nous utilisons
+     * les marchés DEMO comme source.
+     *
+     * L'API-Football pourra être branchée
+     * ici plus tard lorsque le compte sera
+     * réactivé.
+     */
+    const demoResponse =
       await fetch(
         `/api/demo?bankroll=${encodeURIComponent(
           bankroll
         )}`
       );
 
+    const demoData =
+      await demoResponse.json();
+
+    if (!demoResponse.ok) {
+      throw new Error(
+        demoData.error ||
+        "Impossible de récupérer les données DEMO."
+      );
+    }
+
+    /*
+     * Envoyer les marchés DEMO au nouveau
+     * scanner /api/scan.
+     */
+    const response =
+      await fetch(
+        "/api/scan",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            markets:
+              demoData.results
+                .length > 0
+                ? demoData.results.map(
+                    (result) => ({
+                      event:
+                        result.event,
+
+                      market:
+                        result.market,
+
+                      outcomes:
+                        result.outcomes,
+
+                      updatedAt:
+                        result.updatedAt,
+
+                      live:
+                        result.live
+                    })
+                  )
+                : []
+          })
+        }
+      );
+
     const data =
       await response.json();
 
-    if (
-      !response.ok
-    ) {
+    if (!response.ok) {
       throw new Error(
         data.error ||
-          "Erreur pendant l'analyse."
+        "Erreur pendant l'analyse."
       );
     }
 
@@ -302,6 +358,7 @@ async function scanSurebets() {
     ) {
       resultsContainer.innerHTML = `
         <div class="no-surebet">
+
           <strong>
             Aucun surebet détecté.
           </strong>
@@ -310,6 +367,7 @@ async function scanSurebets() {
             Le système recommande
             de ne rien faire.
           </p>
+
         </div>
       `;
 
@@ -342,8 +400,7 @@ async function scanSurebets() {
       "Scanner les cotes";
   }
 }
-
-scanButton.addEventListener(
+      
   "click",
   scanSurebets
 );
