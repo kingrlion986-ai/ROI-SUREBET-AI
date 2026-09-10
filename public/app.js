@@ -2,167 +2,279 @@ const bankrollInput =
   document.getElementById("bankroll");
 
 const scanButton =
-  document.getElementById("scan");
+  document.getElementById("scanButton");
 
-const results =
+const resultsContainer =
   document.getElementById("results");
 
-const status =
-  document.getElementById("status");
-
-
-function money(value) {
-  return Number(value).toLocaleString(
+function formatNumber(value) {
+  return new Intl.NumberFormat(
     "fr-FR",
     {
       maximumFractionDigits: 2
     }
-  ) + " FCFA";
+  ).format(value);
 }
 
+function formatPercent(value) {
+  return (
+    formatNumber(value) + " %"
+  );
+}
 
-function render(data) {
-  results.innerHTML = "";
-
-  if (!data.results.length) {
-    results.innerHTML = `
-      <div class="empty">
-        Aucune surebet détectée.
-      </div>
-    `;
-
-    return;
+function renderQuoteComparison(
+  outcomes
+) {
+  if (
+    !Array.isArray(outcomes) ||
+    outcomes.length === 0
+  ) {
+    return "";
   }
 
-  for (const surebet of data.results) {
+  /*
+   * Regrouper les cotes par résultat.
+   */
+  const groups = {};
 
-    const card =
-      document.createElement("article");
+  for (const outcome of outcomes) {
+    const name = outcome.name;
 
-    card.className = "card";
+    if (!groups[name]) {
+      groups[name] = [];
+    }
 
-    card.innerHTML = `
+    groups[name].push(outcome);
+  }
+
+  return `
+    <div class="quote-comparison">
+      <h4>
+        Comparaison des cotes
+      </h4>
+
+      ${Object.entries(groups)
+        .map(
+          ([name, quotes]) => `
+            <div class="quote-group">
+              <strong>
+                ${name}
+              </strong>
+
+              ${quotes
+                .map(
+                  (quote) => `
+                    <div class="quote-row">
+                      <span>
+                        ${quote.bookmaker}
+                      </span>
+
+                      <span>
+                        @ ${formatNumber(
+                          quote.odds
+                        )}
+                      </span>
+                    </div>
+                  `
+                )
+                .join("")}
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderSurebet(
+  surebet
+) {
+  const stakes =
+    surebet.stakes;
+
+  const outcomes =
+    surebet.outcomes;
+
+  return `
+    <article class="surebet-card">
 
       <h2>
         ${surebet.event}
       </h2>
 
       <p>
-        Marché :
         <strong>
-          ${surebet.market}
+          Marché :
         </strong>
+        ${surebet.market}
       </p>
 
-      ${surebet.outcomes
-        .map(
-          (outcome) => `
-            <div class="row">
+      <div class="best-quotes">
 
-              <span>
-                ${outcome.name}
-                —
-                ${outcome.bookmaker}
-              </span>
+        ${outcomes
+          .map(
+            (outcome) => `
+              <div class="outcome">
+                <div>
+                  <strong>
+                    ${outcome.name}
+                  </strong>
 
-              <strong>
-                @ ${outcome.odds}
-              </strong>
+                  <small>
+                    ${outcome.bookmaker}
+                  </small>
+                </div>
 
-            </div>
-          `
-        )
-        .join("")}
+                <strong>
+                  @ ${formatNumber(
+                    outcome.odds
+                  )}
+                </strong>
+              </div>
+            `
+          )
+          .join("")}
 
-      <p>
-        Indice d'arbitrage :
-        <strong>
-          ${(surebet.inverseSum * 100).toFixed(2)}%
-        </strong>
-      </p>
+      </div>
 
-      <p class="profit">
-        Profit théorique :
-        ${surebet.profitPercent.toFixed(2)}%
-      </p>
+      ${renderQuoteComparison(
+        outcomes
+      )}
 
-      <p>
-        Retour théorique minimum :
-        <strong>
-          ${money(
-            surebet.stakes.guaranteedReturn
-          )}
-        </strong>
-      </p>
+      <div class="arbitrage">
 
-      <h3>
-        Répartition de la bankroll
-      </h3>
+        <div>
+          <span>
+            Indice d'arbitrage
+          </span>
 
-      ${surebet.stakes.stakes
-        .map(
-          (item) => `
-            <div class="row">
+          <strong>
+            ${formatPercent(
+              surebet.inverseSum *
+                100
+            )}
+          </strong>
+        </div>
 
-              <span>
-                ${item.outcome}
-                <br>
+        <div>
+          <span>
+            Profit théorique
+          </span>
 
-                <small>
-                  ${item.bookmaker}
-                </small>
-              </span>
+          <strong>
+            ${formatPercent(
+              surebet.profitPercent
+            )}
+          </strong>
+        </div>
 
-              <strong>
-                ${money(item.stake)}
-              </strong>
+      </div>
 
-            </div>
-          `
-        )
-        .join("")}
+      <div class="stakes">
 
-      <p>
-        Bénéfice théorique :
-        <strong>
-          ${money(
-            surebet.stakes.profit
-          )}
-        </strong>
-      </p>
-    `;
+        <h3>
+          Répartition de la bankroll
+        </h3>
 
-    results.appendChild(card);
-  }
+        ${stakes.stakes
+          .map(
+            (item) => `
+              <div class="stake-row">
+
+                <div>
+                  <strong>
+                    ${item.outcome}
+                  </strong>
+
+                  <small>
+                    ${item.bookmaker}
+                  </small>
+                </div>
+
+                <strong>
+                  ${formatNumber(
+                    item.stake
+                  )}
+                  FCFA
+                </strong>
+
+              </div>
+            `
+          )
+          .join("")}
+
+      </div>
+
+      <div class="summary">
+
+        <div>
+          Retour théorique minimum :
+          <strong>
+            ${formatNumber(
+              stakes.guaranteedReturn
+            )}
+            FCFA
+          </strong>
+        </div>
+
+        <div>
+          Bénéfice théorique :
+          <strong>
+            ${formatNumber(
+              stakes.profit
+            )}
+            FCFA
+          </strong>
+        </div>
+
+        <div>
+          Bankroll restante :
+          <strong>
+            ${formatNumber(
+              stakes.remainingBankroll
+            )}
+            FCFA
+          </strong>
+        </div>
+
+      </div>
+
+      <div class="simulation-warning">
+        Simulation uniquement.
+        Aucun pari réel n'est placé.
+      </div>
+
+    </article>
+  `;
 }
 
-
-async function scanDemo() {
-
+async function scanSurebets() {
   const bankroll =
-    Number(bankrollInput.value);
+    Number(
+      bankrollInput.value
+    );
 
-  if (!Number.isFinite(bankroll) || bankroll <= 0) {
-
-    status.innerHTML = `
-      <div class="empty">
-        Entre une bankroll supérieure à 0.
-      </div>
-    `;
+  if (
+    !Number.isFinite(
+      bankroll
+    ) ||
+    bankroll <= 0
+  ) {
+    resultsContainer.innerHTML =
+      "<p>Veuillez entrer une bankroll valide.</p>";
 
     return;
   }
 
-  status.innerHTML = `
-    <div class="ok">
-      Analyse des cotes en cours...
-    </div>
-  `;
+  scanButton.disabled = true;
 
-  results.innerHTML = "";
+  scanButton.textContent =
+    "Analyse en cours...";
+
+  resultsContainer.innerHTML =
+    "<p>Analyse des opportunités...</p>";
 
   try {
-
     const response =
       await fetch(
         `/api/demo?bankroll=${encodeURIComponent(
@@ -170,38 +282,68 @@ async function scanDemo() {
         )}`
       );
 
-    if (!response.ok) {
-      throw new Error(
-        "Erreur lors de l'analyse."
-      );
-    }
-
     const data =
       await response.json();
 
-    render(data);
+    if (
+      !response.ok
+    ) {
+      throw new Error(
+        data.error ||
+          "Erreur pendant l'analyse."
+      );
+    }
 
-    status.innerHTML = `
-      <div class="ok">
-        Analyse terminée — simulation uniquement.
-      </div>
-    `;
+    if (
+      !Array.isArray(
+        data.results
+      ) ||
+      data.results.length === 0
+    ) {
+      resultsContainer.innerHTML = `
+        <div class="no-surebet">
+          <strong>
+            Aucun surebet détecté.
+          </strong>
+
+          <p>
+            Le système recommande
+            de ne rien faire.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    resultsContainer.innerHTML =
+      data.results
+        .map(
+          renderSurebet
+        )
+        .join("");
 
   } catch (error) {
 
-    status.innerHTML = `
-      <div class="empty">
+    console.error(error);
+
+    resultsContainer.innerHTML = `
+      <div class="error">
         ${error.message}
       </div>
     `;
+
+  } finally {
+
+    scanButton.disabled =
+      false;
+
+    scanButton.textContent =
+      "Scanner les cotes";
   }
 }
 
-
 scanButton.addEventListener(
   "click",
-  scanDemo
+  scanSurebets
 );
-
-
-scanDemo();
