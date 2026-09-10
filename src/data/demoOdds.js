@@ -10,15 +10,25 @@ const demoMarkets = [
         odds: 2.70
       },
       {
+        name: "Over 2.5",
+        bookmaker: "Bookmaker C (DEMO)",
+        odds: 2.55
+      },
+      {
         name: "Under 2.5",
         bookmaker: "Bookmaker B (DEMO)",
-        odds: 2.50
+        odds: 2.60
+      },
+      {
+        name: "Under 2.5",
+        bookmaker: "Bookmaker C (DEMO)",
+        odds: 2.40
       }
     ]
   },
 
   {
-    event: "Match de test sans surebet",
+    event: "Match sans surebet",
     market: "Over/Under 2.5",
 
     outcomes: [
