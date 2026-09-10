@@ -5,10 +5,13 @@ const { findSurebets } = require("./src/engine/surebet");
 const { calculateStakes } = require("./src/engine/stakeCalculator");
 const { demoMarkets } = require("./src/data/demoOdds");
 const {
-getCountries,
-getFixtures,
-getLiveFixtures,
-getLiveOdds
+  getCountries,
+  getFixtures,
+  getLiveFixtures,
+  getLiveOdds,
+  getPreMatchOdds,
+  getBookmakers,
+  getLiveBetTypes
 } = require("./src/providers/apiFootball");
 const {
 normalizeLiveOdds
