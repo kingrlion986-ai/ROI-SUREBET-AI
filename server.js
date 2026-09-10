@@ -66,6 +66,14 @@ results
 });
 });
 
+app.get("/api/demo-markets", (_req, res) => {
+  res.json({
+    ok: true,
+    mode: "simulation",
+    markets: demoMarkets
+  });
+});
+
 app.post("/api/surebets", (req, res) => {
 const {
 markets,
