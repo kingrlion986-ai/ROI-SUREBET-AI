@@ -104,6 +104,37 @@ results
 });
 
 app.get(
+  "/api/football/bookmakers",
+  async (_req, res) => {
+    try {
+      const result =
+        await getBookmakers();
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        remainingRequests:
+          result.remaining,
+        bookmakers:
+          result.data.response || []
+      });
+
+    } catch (error) {
+      console.error(
+        "API-Football bookmakers error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        provider: "API-Football",
+        error: error.message
+      });
+    }
+  }
+);
+
+app.get(
 "/api/football/test",
 async (_req, res) => {
 try {
