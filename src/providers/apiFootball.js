@@ -106,10 +106,34 @@ async function getLiveOdds(params = {}) {
   );
 }
 
+async function getPreMatchOdds(params = {}) {
+  return apiFootballRequest(
+    "/odds",
+    params
+  );
+}
+
+async function getBookmakers(params = {}) {
+  return apiFootballRequest(
+    "/odds/bookmakers",
+    params
+  );
+}
+
+async function getLiveBetTypes(params = {}) {
+  return apiFootballRequest(
+    "/odds/live/bets",
+    params
+  );
+}
+
 module.exports = {
   apiFootballRequest,
   getCountries,
   getFixtures,
   getLiveFixtures,
-  getLiveOdds
+  getLiveOdds,
+  getPreMatchOdds,
+  getBookmakers,
+  getLiveBetTypes
 };
