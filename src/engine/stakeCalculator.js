@@ -24,9 +24,7 @@ function calculateStakes(
   }
 
   const minStake =
-    Number(
-      options.minStake || 0
-    );
+    Number(options.minStake ?? 0);
 
   const maxStake =
     Number.isFinite(
@@ -36,14 +34,13 @@ function calculateStakes(
       : B;
 
   const rounding =
-    Number(
-      options.rounding || 1
-    );
+    Number(options.rounding ?? 1);
 
   if (
     minStake < 0 ||
     maxStake <= 0 ||
-    minStake > maxStake
+    minStake > maxStake ||
+    rounding <= 0
   ) {
     throw new Error(
       "Paramètres de mise invalides."
@@ -75,25 +72,34 @@ function calculateStakes(
         )
     );
 
-  const total =
+  const inverseSum =
     weights.reduce(
-      (a, b) => a + b,
+      (sum, value) =>
+        sum + value,
       0
     );
 
-  if (total <= 0) {
+  if (inverseSum <= 0) {
     throw new Error(
       "Impossible de calculer la répartition."
     );
   }
 
+  /*
+   * Répartition théorique :
+   *
+   * mise =
+   * bankroll ×
+   * (1 / cote) /
+   * somme(1 / cote)
+   */
   const rawStakes =
     outcomes.map(
-      (outcome, index) =>
+      (_outcome, index) =>
         B *
         (
           weights[index] /
-          total
+          inverseSum
         )
     );
 
@@ -104,6 +110,24 @@ function calculateStakes(
           stake / rounding
         ) * rounding
     );
+
+  const totalStake =
+    roundedStakes.reduce(
+      (sum, stake) =>
+        sum + stake,
+      0
+    );
+
+  /*
+   * Sécurité :
+   * les arrondis ne doivent jamais
+   * faire dépasser la bankroll.
+   */
+  if (totalStake > B) {
+    throw new Error(
+      "Les arrondis dépassent la bankroll."
+    );
+  }
 
   const stakes =
     outcomes.map(
@@ -127,18 +151,13 @@ function calculateStakes(
       })
     );
 
-  const totalStake =
-    stakes.reduce(
-      (sum, item) =>
-        sum + item.stake,
-      0
-    );
-
   const limitsOk =
     stakes.every(
       (item) =>
-        item.stake >= minStake &&
-        item.stake <= maxStake
+        item.stake >=
+          minStake &&
+        item.stake <=
+          maxStake
     );
 
   const returns =
@@ -157,11 +176,15 @@ function calculateStakes(
 
   const profitPercent =
     totalStake > 0
-      ? (profit / totalStake) * 100
+      ? (profit /
+          totalStake) *
+        100
       : 0;
 
   return {
     bankroll: B,
+
+    inverseSum,
 
     totalStake,
 
@@ -179,7 +202,6 @@ function calculateStakes(
     stakes
   };
 }
-
 
 module.exports = {
   calculateStakes
