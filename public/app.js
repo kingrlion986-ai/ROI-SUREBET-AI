@@ -248,7 +248,8 @@ function renderSurebet(
   `;
 }
 
-async function scanSurebets() {
+    
+  async function scanSurebets() {
   const bankroll =
     Number(
       bankrollInput.value
@@ -274,33 +275,25 @@ async function scanSurebets() {
 
   try {
     /*
-     * Pour le moment, nous utilisons
-     * les marchés DEMO comme source.
-     *
-     * L'API-Football pourra être branchée
-     * ici plus tard lorsque le compte sera
-     * réactivé.
+     * Récupération de tous les marchés DEMO.
+     * Aucune cote n'est filtrée ici.
      */
-    const demoResponse =
-      await fetch(
-        `/api/demo?bankroll=${encodeURIComponent(
-          bankroll
-        )}`
-      );
+    const marketsResponse =
+      await fetch("/api/demo-markets");
 
-    const demoData =
-      await demoResponse.json();
+    const marketsData =
+      await marketsResponse.json();
 
-    if (!demoResponse.ok) {
+    if (!marketsResponse.ok) {
       throw new Error(
-        demoData.error ||
-        "Impossible de récupérer les données DEMO."
+        marketsData.error ||
+        "Impossible de récupérer les marchés."
       );
     }
 
     /*
-     * Envoyer les marchés DEMO au nouveau
-     * scanner /api/scan.
+     * Envoi de toutes les cotes au moteur
+     * de détection.
      */
     const response =
       await fetch(
@@ -315,27 +308,8 @@ async function scanSurebets() {
 
           body: JSON.stringify({
             markets:
-              demoData.results
-                .length > 0
-                ? demoData.results.map(
-                    (result) => ({
-                      event:
-                        result.event,
-
-                      market:
-                        result.market,
-
-                      outcomes:
-                        result.outcomes,
-
-                      updatedAt:
-                        result.updatedAt,
-
-                      live:
-                        result.live
-                    })
-                  )
-                : []
+              marketsData.markets,
+            bankroll
           })
         }
       );
@@ -351,9 +325,7 @@ async function scanSurebets() {
     }
 
     if (
-      !Array.isArray(
-        data.results
-      ) ||
+      !Array.isArray(data.results) ||
       data.results.length === 0
     ) {
       resultsContainer.innerHTML = `
@@ -393,13 +365,12 @@ async function scanSurebets() {
 
   } finally {
 
-    scanButton.disabled =
-      false;
+    scanButton.disabled = false;
 
     scanButton.textContent =
       "Scanner les cotes";
   }
-}
+  }
       
   "click",
   scanSurebets
