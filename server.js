@@ -383,6 +383,115 @@ Number(req.params.fixture);
 }
 );
 
+app.get(
+  "/api/football/diagnostic/:fixture",
+  async (req, res) => {
+    try {
+      const fixture =
+        Number(req.params.fixture);
+
+      if (!Number.isInteger(fixture)) {
+        return res.status(400).json({
+          ok: false,
+          error: "fixture invalide."
+        });
+      }
+
+      const result =
+        await getLiveOdds({
+          fixture
+        });
+
+      const response =
+        result.data.response || [];
+
+      const first =
+        response[0] || null;
+
+      const diagnostic = {
+        topLevelKeys: first
+          ? Object.keys(first)
+          : [],
+
+        fixtureKeys:
+          first?.fixture
+            ? Object.keys(first.fixture)
+            : [],
+
+        teamsKeys:
+          first?.teams
+            ? Object.keys(first.teams)
+            : [],
+
+        statusKeys:
+          first?.status
+            ? Object.keys(first.status)
+            : [],
+
+        oddsCount:
+          Array.isArray(first?.odds)
+            ? first.odds.length
+            : 0,
+
+        firstBetKeys:
+          first?.odds?.[0]
+            ? Object.keys(first.odds[0])
+            : [],
+
+        firstBetValueKeys:
+          first?.odds?.[0]?.values?.[0]
+            ? Object.keys(
+                first.odds[0].values[0]
+              )
+            : [],
+
+        bookmakerCandidates: {
+          itemBookmaker:
+            first?.bookmaker ?? null,
+
+          itemSource:
+            first?.source ?? null,
+
+          betBookmaker:
+            first?.odds?.[0]?.bookmaker ?? null,
+
+          betSource:
+            first?.odds?.[0]?.source ?? null,
+
+          valueBookmaker:
+            first?.odds?.[0]?.values?.[0]
+              ?.bookmaker ?? null,
+
+          valueSource:
+            first?.odds?.[0]?.values?.[0]
+              ?.source ?? null
+        },
+
+        remainingRequests:
+          result.remaining
+      };
+
+      res.json({
+        ok: true,
+        provider: "API-Football",
+        fixture,
+        diagnostic
+      });
+
+    } catch (error) {
+      console.error(
+        "Diagnostic live odds error:",
+        error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+  }
+);
+
 app.get("*", (_req, res) => {
 res.sendFile(
 path.join(
